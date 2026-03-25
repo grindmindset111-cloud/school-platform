@@ -1,0 +1,183 @@
+/* register.css */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root{
+  --bg-green: #8FCD96;
+  --nav-black: #0b0b0b;
+  --login-bg: #cfcfcf;
+  --btn-dark: #3b3b3b;
+  --text: #0a0a0a;
+  --radius: 10px;
+  --max-form: 520px;
+
+  /* Reduced width (you asked me to change it myself) */
+  --login-width: 180px;
+}
+
+body{
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: var(--bg-green);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* ===== NAVBAR ===== */
+.topbar{
+  width: 100%;
+  background: var(--nav-black);
+  padding: 18px 30px;
+}
+
+.topbar .bar-inner{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.brand-left{
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 1px;
+  font-size: clamp(22px, 2.4vw, 44px);
+  color: #fff;
+  white-space: nowrap;
+}
+
+.brand-center{
+  flex: 1;
+  text-align: center;
+  font-weight: 900;
+  color: #fff;
+  font-size: clamp(18px, 2.2vw, 36px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav-actions{
+  display: flex;
+  justify-content: flex-end;
+}
+
+.login-btn{
+  width: var(--login-width);
+  height: 40px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--login-bg);
+  color: #0b0b0b;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.login-btn:hover{
+  filter: brightness(0.96);
+}
+
+/* ===== PAGE LAYOUT ===== */
+.page{
+  width: 100%;
+  padding: 70px 18px;
+  display: flex;
+  justify-content: center;
+}
+
+.card{
+  width: min(var(--max-form), 92vw);
+  text-align: center;
+}
+
+.card h1{
+  font-weight: 900;
+  font-size: 34px;
+  letter-spacing: 1px;
+  margin-bottom: 40px;
+}
+
+/* ===== FORM ===== */
+form{
+  width: 100%;
+  margin: 0 auto;
+  text-align: left;
+}
+
+.field{
+  margin-bottom: 22px;
+}
+
+label{
+  display: block;
+  font-weight: 800;
+  font-size: 22px;
+  margin-bottom: 10px;
+}
+
+input, select{
+  width: 100%;
+  height: 44px;
+  padding: 0 16px;
+  border: 0;
+  outline: none;
+  border-radius: var(--radius);
+  background: #fff;
+  font-size: 15px;
+}
+
+select{
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, #7d7d7d 50%),
+                    linear-gradient(135deg, #7d7d7d 50%, transparent 50%);
+  background-position: calc(100% - 20px) calc(50% - 3px),
+                       calc(100% - 14px) calc(50% - 3px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  padding-right: 44px;
+}
+
+button[type="submit"]{
+  width: 100%;
+  height: 44px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--btn-dark);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+button[type="submit"]:hover{
+  filter: brightness(1.05);
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 720px){
+  .topbar{
+    padding: 14px 14px;
+  }
+
+  .brand-center{
+    display: none;
+  }
+
+  :root{
+    --login-width: 140px;
+  }
+
+  .page{
+    padding: 50px 16px;
+  }
+
+  label{
+    font-size: 18px;
+  }
+
+  .card h1{
+    font-size: 28px;
+  }
+}

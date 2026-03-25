@@ -1,62 +1,196 @@
 # School Platform – API Contract
+
 ## Base Configuration
-- Base URL: https://school-platform-production-62bd.up.railway.app/api
+
+- Base URL: https://school-platform-bnpo.onrender.com
+- API Prefix: /api
 - Authentication: JWT (Bearer Token)
 - Authorization Header: Authorization: Bearer <token>
 
+---
 
-## Authentication
+## Standard Response Format
 
-### POST /auth/login
-- Description: Authenticate user and return JWT token
-- Body:
-  - email: string
-  - password: string
-- Response:
-  - token: string
-  - user: object
+All endpoints should return:
 
-### POST /auth/register
-- Description: Register a new user
-- Body:
-  - name: string
-  - email: string
-  - password: string
-  - role: string
-- Response:
-  - token: string
-  - user: object
+{
+  "success": true,
+  "data": {},
+  "message": "Optional message"
+}
 
-### GET /auth/me
-- Description: Get currently authenticated user
-- Headers:
-  - Authorization: Bearer <token>
-- Response:
-  - user: object
+---
 
+# Authentication
 
-## Users
+## POST /api/auth/login
+Description: Authenticate user and return JWT token
 
-### GET /users
-- Description: Get all users (admin only)
-- Headers:
-  - Authorization: Bearer <token>
-- Response:
-  - users: array
+Body:
+{
+  "email": "string",
+  "password": "string"
+}
 
-### GET /users/:id
-- Description: Get single user by ID
-- Headers:
-  - Authorization: Bearer <token>
-- Response:
-  - user: object
+Response:
+{
+  "success": true,
+  "data": {
+    "token": "string",
+    "user": {}
+  }
+}
 
-### PUT /users/:id
-- Description: Update user details
-- Headers:
-  - Authorization: Bearer <token>
-- Body:
-  - name: string
-  - role: string
-- Response:
-  - user: object
+---
+
+## POST /api/auth/register
+Description: Register a new user
+
+Body:
+{
+  "name": "string",
+  "email": "string",
+  "password": "string",
+  "role": "string"
+}
+
+Response:
+{
+  "success": true,
+  "data": {
+    "token": "string",
+    "user": {}
+  }
+}
+
+---
+
+## GET /api/auth/me
+Description: Get currently authenticated user
+
+Headers:
+Authorization: Bearer <token>
+
+Response:
+{
+  "success": true,
+  "data": {
+    "user": {}
+  }
+}
+
+---
+
+# Users
+
+## GET /api/users
+Description: Get all users (admin only)
+
+Headers:
+Authorization: Bearer <token>
+
+Response:
+{
+  "success": true,
+  "data": {
+    "users": []
+  }
+}
+
+---
+
+## GET /api/users/:id
+Description: Get single user by ID
+
+Headers:
+Authorization: Bearer <token>
+
+Response:
+{
+  "success": true,
+  "data": {
+    "user": {}
+  }
+}
+
+---
+
+## PUT /api/users/:id
+Description: Update user details
+
+Headers:
+Authorization: Bearer <token>
+
+Body:
+{
+  "name": "string",
+  "role": "string"
+}
+
+Response:
+{
+  "success": true,
+  "data": {
+    "user": {}
+  }
+}
+
+---
+
+# Departments
+
+## GET /api/departments
+Description: Get all departments
+
+Headers:
+Authorization: Bearer <token>
+
+Response:
+{
+  "success": true,
+  "data": {
+    "departments": []
+  }
+}
+
+---
+
+## POST /api/departments
+Description: Create a new department (admin only)
+
+Headers:
+Authorization: Bearer <token>
+
+Body:
+{
+  "name": "string"
+}
+
+Response:
+{
+  "success": true,
+  "data": {
+    "department": {}
+  }
+}
+
+---
+
+## PUT /api/departments/:id
+Description: Update department
+
+Headers:
+Authorization: Bearer <token>
+
+Body:
+{
+  "name": "string"
+}
+
+Response:
+{
+  "success": true,
+  "data": {
+    "department": {}
+  }
+}

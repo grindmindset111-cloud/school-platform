@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard</title>
+
+  <link rel="stylesheet" href="../css/main.css" />
+</head>
+<body>
+
+  <section class="page">
+    <div class="card">
+      <h1>Dashboard</h1>
+
+      <p id="welcomeMessage">Loading user...</p>
+
+      <button id="logoutBtn">Logout</button>
+    </div>
+  </section>
+
+  <!-- Authentication guard (runs first) -->
+  <script src="../js/authGuard.js"></script>
+
+  <!-- Dashboard logic -->
+  <script src="../js/dashboard.js"></script>
+
+</body>
+</html>

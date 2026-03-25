@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register</title>
+
+  <!-- Absolute paths because server root is SCHOOL-PLATFORM -->
+  <link rel="stylesheet" href="/frontend/css/main.css" />
+  <link rel="stylesheet" href="/frontend/css/auth.css" />
+</head>
+
+<body>
+  <section class="page">
+    <div class="card">
+      <h1>Create Account</h1>
+
+      <form id="registerForm" autocomplete="off">
+
+        <div class="field">
+          <label for="name">Name</label>
+          <input type="text" id="name" name="name" required />
+        </div>
+
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required />
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required />
+        </div>
+
+        <div class="field">
+          <label for="role">Role</label>
+          <select id="role" name="role" required>
+            <option value="">Select Role</option>
+            <option value="STUDENT">Student</option>
+            <option value="ADMIN">Admin</option>
+          </select>
+        </div>
+
+        <button type="submit">Register</button>
+
+      </form>
+    </div>
+  </section>
+
+  <!-- Absolute path to JS -->
+  <script src="/frontend/css/js/register.js"></script>
+</body>
+</html>

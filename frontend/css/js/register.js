@@ -29,13 +29,12 @@ document.addEventListener("DOMContentLoaded", () => {
       role: role.toUpperCase()
     };
 
-    // Students require classLevelId
-    if (role.toUpperCase() === "STUDENT") {
+    if (payload.role === "STUDENT") {
       payload.classLevelId = 1;
     }
 
     try {
-      const response = await fetch(`${BASE_URL}/api/auth/register`, {
+      const res = await fetch(`${BASE_URL}/api/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -43,26 +42,27 @@ document.addEventListener("DOMContentLoaded", () => {
         body: JSON.stringify(payload)
       });
 
-      const data = await response.json();
+      const data = await res.json();
+      console.log("REGISTER RESPONSE:", data);
 
-      // Trust HTTP status
-      if (!response.ok) {
-        alert(data.message || "Registration failed.");
+      if (!res.ok) {
+        alert(data.message || "Registration failed");
         return;
       }
 
-      const token = data?.data?.token;
+      // Flexible token handling
+      const token = data?.data?.token || data?.token;
 
       if (token) {
         localStorage.setItem("token", token);
-        window.location.href = "./dashboard.html";
+        window.location.href = "../pages/dashboard.html";
       } else {
-        window.location.href = "./login.html";
+        window.location.href = "../pages/login.html";
       }
 
-    } catch (error) {
-      console.error("Registration error:", error);
-      alert("Network error. Backend may be sleeping.");
+    } catch (err) {
+      console.error("Registration error:", err);
+      alert("Network error");
     }
   });
 });

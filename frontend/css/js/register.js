@@ -3,11 +3,43 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const BASE_URL = "https://school-platform-bnpo.onrender.com";
   const form = document.getElementById("registerForm");
+  const roleSelect = document.getElementById("role");
+  const classLevelField = document.getElementById("classLevelField");
+  const classLevelSelect = document.getElementById("classLevel");
 
   if (!form) {
     console.error("registerForm not found");
     return;
   }
+
+  if (!roleSelect) {
+    console.error("role select not found");
+    return;
+  }
+
+  // Hide class level by default
+  if (classLevelField) {
+    classLevelField.style.display = "none";
+  }
+
+  // Show class level only for STUDENT
+  roleSelect.addEventListener("change", () => {
+    const selectedRole = roleSelect.value;
+
+    if (selectedRole === "STUDENT") {
+      if (classLevelField) {
+        classLevelField.style.display = "block";
+      }
+    } else {
+      if (classLevelField) {
+        classLevelField.style.display = "none";
+      }
+
+      if (classLevelSelect) {
+        classLevelSelect.value = "";
+      }
+    }
+  });
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -15,7 +47,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const name = document.getElementById("name")?.value.trim();
     const email = document.getElementById("email")?.value.trim();
     const password = document.getElementById("password")?.value.trim();
-    const role = document.getElementById("role")?.value;
+    const role = roleSelect.value;
+    const classLevelId = classLevelSelect?.value;
 
     if (!name || !email || !password || !role) {
       alert("All fields are required.");
@@ -29,12 +62,20 @@ document.addEventListener("DOMContentLoaded", () => {
       role: role.toUpperCase()
     };
 
+    // Only STUDENT requires classLevelId
     if (payload.role === "STUDENT") {
-      payload.classLevelId = 1;
+      if (!classLevelId) {
+        alert("Please select a class level.");
+        return;
+      }
+
+      payload.classLevelId = Number(classLevelId);
     }
 
+    console.log("Sending payload:", payload);
+
     try {
-      const res = await fetch(`${BASE_URL}/api/auth/register`, {
+      const response = await fetch(`${BASE_URL}/api/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -42,15 +83,14 @@ document.addEventListener("DOMContentLoaded", () => {
         body: JSON.stringify(payload)
       });
 
-      const data = await res.json();
+      const data = await response.json();
       console.log("REGISTER RESPONSE:", data);
 
-      if (!res.ok) {
+      if (!response.ok) {
         alert(data.message || "Registration failed");
         return;
       }
 
-      // Flexible token handling
       const token = data?.data?.token || data?.token;
 
       if (token) {
@@ -60,8 +100,8 @@ document.addEventListener("DOMContentLoaded", () => {
         window.location.href = "../pages/login.html";
       }
 
-    } catch (err) {
-      console.error("Registration error:", err);
+    } catch (error) {
+      console.error("Registration error:", error);
       alert("Network error");
     }
   });

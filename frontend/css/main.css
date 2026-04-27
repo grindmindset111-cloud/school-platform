@@ -6,11 +6,11 @@
 }
 
 :root{
-  --bg-green: #8FCD96;
-  --nav-black: #0b0b0b;
+  background: linear-gradient(135deg, rgb(0, 0, 0), rgb(0, 0, 0), rgb(0, 0, 34), rgb(0, 0, 58), rgb(0, 0, 73));
+  --nav-black: #000000;
   --login-bg: #cfcfcf;
-  --btn-dark: #3b3b3b;
-  --text: #0a0a0a;
+  --btn-dark: #000000;
+  --text: #ffffff;
   --radius: 10px;
   --max-form: 520px;
 
@@ -20,9 +20,9 @@
 
 body{
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  min-height: 100vh;
   background: var(--bg-green);
   color: var(--text);
-  min-height: 100vh;
 }
 
 /* ===== NAVBAR ===== */

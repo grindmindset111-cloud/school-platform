@@ -22,17 +22,35 @@ export const userSession = {
     return localStorage.getItem(TOKEN_KEY);
   },
 
-  setUser(user) {
-    if (!user) return;
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
+  setUser(user, token) {
+    if (!user || typeof user !== "object" || Array.isArray(user) || !token) {
+      throw new Error("Invalid session payload.");
+    }
+
+    try {
+      localStorage.setItem(TOKEN_KEY, token);
+      localStorage.setItem(USER_KEY, JSON.stringify(user));
+    } catch (error) {
+      this.clearUser();
+      throw error;
+    }
   },
 
   getUser() {
-    return parseUser(localStorage.getItem(USER_KEY));
+    const token = this.getToken();
+    const user = parseUser(localStorage.getItem(USER_KEY));
+    const isValidUser = Boolean(user && typeof user === "object" && !Array.isArray(user));
+
+    if (!token || !isValidUser) {
+      this.clearUser();
+      return null;
+    }
+
+    return user;
   },
 
   hasSession() {
-    return Boolean(this.getToken());
+    return Boolean(this.getToken() && this.getUser());
   },
 
   clear() {
@@ -41,6 +59,7 @@ export const userSession = {
   },
 
   clearUser() {
+    localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
   },
 
@@ -65,7 +84,7 @@ export const userSession = {
     const user = result?.data?.user || result?.user || null;
     if (!user) throw new Error("Invalid user payload.");
 
-    this.setUser(user);
+    this.setUser(user, token);
     return user;
   }
 };

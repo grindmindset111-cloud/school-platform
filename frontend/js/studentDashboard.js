@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   showLoader(dashboardContent);
   try {
-    const data = await apiRequest();
+    const data = await apiRequest("/dashboard");
     renderStudentDashboard(dashboardContent, data, user);
   } catch (error) {
     showError(dashboardContent, error);

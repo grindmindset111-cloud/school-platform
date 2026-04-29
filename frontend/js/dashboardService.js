@@ -8,7 +8,7 @@ export function bindLogout(buttonId, redirectPath = "./login.html") {
 
   button.addEventListener("click", async () => {
     await Promise.resolve();
-    userSession.clear();
+    userSession.clearUser();
     window.location.href = redirectPath;
   });
 }

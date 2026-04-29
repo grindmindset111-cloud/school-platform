@@ -1,6 +1,4 @@
 import { authService } from "./authService.js";
-import { userSession } from "./userSession.js";
-import { routeByRole } from "./roleRouter.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("registerForm");
@@ -21,41 +19,32 @@ document.addEventListener("DOMContentLoaded", () => {
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
 
-    const name = document.getElementById("name")?.value.trim();
     const email = document.getElementById("email")?.value.trim();
     const password = document.getElementById("password")?.value.trim();
     const role = roleSelect.value.toUpperCase();
-    const classLevelId = classLevelSelect.value;
+    const classLevel = classLevelSelect.value;
 
-    if (!name || !email || !password || !role) {
+    if (!email || !password || !role) {
       alert("All fields are required.");
       return;
     }
 
-    const payload = { name, email, password, role };
+    const payload = { email, password, role, classLevel: "" };
     if (role === "STUDENT") {
-      if (!classLevelId) {
+      if (!classLevel) {
         alert("Please select a class level.");
         return;
       }
-      payload.classLevelId = Number(classLevelId);
+      payload.classLevel = classLevel;
     }
 
     try {
       const result = await authService.register(payload);
-      const token = result?.data?.token || result?.token || null;
-      const user = result?.data?.user || result?.user || null;
-
-      if (!token) {
-        window.location.href = "./login.html";
+      if (result?.user && result?.token) {
+        authService.routeUser(result.user);
         return;
       }
-
-      userSession.setToken(token);
-      if (user) userSession.setUser(user);
-
-      const activeUser = user || (await userSession.syncUser());
-      routeByRole(activeUser.role);
+      window.location.href = "./login.html";
     } catch (error) {
       alert(error.message || "Registration failed.");
     }

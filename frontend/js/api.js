@@ -11,6 +11,12 @@ const MOCK_ATTENDANCE = [
 
 const USE_MOCK = true;
 const BASE_URL = "https://school-platform-bnpo.onrender.com";
+const LOGIN_PATH = "login.html";
+
+function clearUser() {
+  localStorage.removeItem("token");
+  localStorage.removeItem("currentUser");
+}
 
 function getMockDashboardData() {
   return {
@@ -24,28 +30,72 @@ function getMockDashboardData() {
   };
 }
 
-async function fetchRequest(path, options = {}) {
-  const headers = {
-    "Content-Type": "application/json",
-    ...(options.headers || {})
-  };
+function parseBody(options = {}) {
+  if (!options.body) return {};
+  try {
+    return JSON.parse(options.body);
+  } catch (error) {
+    return {};
+  }
+}
 
-  const response = await fetch(`${BASE_URL}${path}`, { ...options, headers });
-  const payload = await response.json().catch(() => null);
+function getMockResponse(path = "/dashboard", options = {}) {
+  const body = parseBody(options);
+  const normalizedPath = String(path || "").toLowerCase();
 
-  if (!response.ok) {
-    const message = payload?.message || payload?.error || "Request failed";
-    throw new Error(message);
+  if (normalizedPath.includes("/login")) {
+    const isAdmin = String(body.email || "").toLowerCase().includes("admin");
+    return {
+      user: { name: body.email || "Test User", role: isAdmin ? "ADMIN" : "STUDENT" },
+      token: "mock-token"
+    };
   }
 
-  return payload;
+  if (normalizedPath.includes("/register")) {
+    return {
+      message: "Registration successful",
+      user: {
+        name: body.email || "New User",
+        role: String(body.role || "STUDENT").toUpperCase()
+      },
+      token: "mock-token"
+    };
+  }
+
+  if (normalizedPath.includes("/api/auth/me")) {
+    return {
+      user: { role: "ADMIN", name: "Test User" }
+    };
+  }
+
+  return getMockDashboardData();
 }
 
 export async function apiRequest(path = "/dashboard", options = {}) {
   if (USE_MOCK) {
-    return getMockDashboardData();
+    return getMockResponse(path, options);
   }
-  return fetchRequest(path, options);
+
+  const res = await fetch(BASE_URL + path, {
+    headers: {
+      "Content-Type": "application/json"
+    },
+    ...options
+  });
+
+  if (!res.ok) {
+    if (res.status === 401) {
+      clearUser();
+      window.location.href = LOGIN_PATH;
+    }
+    if (res.status === 403) {
+      window.location.href = "dashboard.html";
+    }
+
+    throw new Error(`API Error: ${res.status}`);
+  }
+
+  return res.json();
 }
 
 export const api = {
@@ -62,33 +112,9 @@ export const api = {
     };
   },
   async post(path, body = {}) {
-    if (!USE_MOCK) {
-      return fetchRequest(path, {
-        method: "POST",
-        body: JSON.stringify(body)
-      });
-    }
-
-    if (path?.includes("login")) {
-      const isAdmin = String(body.email || "").toLowerCase().includes("admin");
-      const role = isAdmin ? "ADMIN" : "STUDENT";
-      return {
-        token: "mock-token",
-        user: { name: body.email || "Test User", role }
-      };
-    }
-
-    if (path?.includes("register")) {
-      return {
-        message: "Registration successful",
-        token: "mock-token",
-        user: {
-          name: body.name || "New User",
-          role: (body.role || "STUDENT").toUpperCase()
-        }
-      };
-    }
-
-    return { message: "Mock request successful" };
+    return apiRequest(path, {
+      method: "POST",
+      body: JSON.stringify(body)
+    });
   }
 };

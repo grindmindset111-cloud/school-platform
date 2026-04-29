@@ -1,4 +1,4 @@
-# School Platform – API Contract
+# School Platform - API Contract
 
 ## Base Configuration
 

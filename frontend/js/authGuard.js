@@ -6,13 +6,12 @@ function redirectTo(path) {
 }
 
 export async function requireAuth(options = {}) {
-  const {
-    roles = [],
-    redirectToLogin = "./login.html",
-    denyOnWrongRole = true
-  } = options;
+  const normalizedOptions = Array.isArray(options) ? { roles: options } : options;
+  const { roles = [], redirectToLogin = "./login.html" } = normalizedOptions;
+  const allowedRoles = roles.map((role) => String(role).toUpperCase());
 
   if (!userSession.hasSession()) {
+    userSession.clear();
     redirectTo(redirectToLogin);
     return null;
   }
@@ -20,12 +19,14 @@ export async function requireAuth(options = {}) {
   try {
     const user = await userSession.syncUser();
     const userRole = (user.role || "").toUpperCase();
-    const allowedRoles = roles.map((role) => role.toUpperCase());
+    if (!userRole) {
+      throw new Error("Invalid session role.");
+    }
+    if (!["ADMIN", "STUDENT"].includes(userRole)) {
+      throw new Error("Unknown session role.");
+    }
 
     if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
-      if (denyOnWrongRole) {
-        alert("Access denied for your role.");
-      }
       routeByRole(userRole);
       return null;
     }

@@ -40,6 +40,10 @@ export const userSession = {
     localStorage.removeItem(USER_KEY);
   },
 
+  clearUser() {
+    localStorage.removeItem(USER_KEY);
+  },
+
   getRole() {
     return (this.getUser()?.role || "").toUpperCase();
   },
@@ -47,6 +51,11 @@ export const userSession = {
   async syncUser() {
     const token = this.getToken();
     if (!token) throw new Error("No active session.");
+
+    const cachedUser = this.getUser();
+    if (cachedUser?.role) {
+      return cachedUser;
+    }
 
     const result = await api.get("/api/auth/me", {
       headers: {

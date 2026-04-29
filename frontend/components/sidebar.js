@@ -1,5 +1,8 @@
+import { userSession } from "../js/userSession.js";
+
 export function renderSidebar({ role = "USER" } = {}) {
-  const normalizedRole = role.toUpperCase();
+  const resolvedRole = role === "USER" ? userSession.getRole() || role : role;
+  const normalizedRole = String(resolvedRole || "USER").toUpperCase();
   const navItems =
     normalizedRole === "ADMIN"
       ? [

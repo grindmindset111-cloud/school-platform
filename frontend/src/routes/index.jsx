@@ -1,35 +1,24 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
 import Login from '../pages/Login'
 import Register from '../pages/Register'
-import useAuthStore from '../store/authStore'
+import Unauthorized from '../pages/Unauthorized'
+import Booking from '../pages/Booking'
+import ProtectedRoute from '@/routes/ProtectedRoute'
 
-function RoleRoute({ allowedRole, children }) {
-  const token = useAuthStore((state) => state.token)
-  const role = useAuthStore((state) => state.role)
-
-  if (!token || !role) {
-    return <Navigate to="/login" replace />
-  }
-
-  if (role !== allowedRole) {
-    if (role === 'admin') return <Navigate to="/dashboard/admin" replace />
-    if (role === 'teacher') return <Navigate to="/dashboard/teacher" replace />
-    return <Navigate to="/dashboard/student" replace />
-  }
-
-  return children
+function AdminPage() {
+  return 'admin'
 }
 
-function AdminDashboardRoute() {
-  return <RoleRoute allowedRole="admin">admin</RoleRoute>
+function TeacherPage() {
+  return 'teacher'
 }
 
-function TeacherDashboardRoute() {
-  return <RoleRoute allowedRole="teacher">teacher</RoleRoute>
+function StudentPage() {
+  return 'student'
 }
 
-function StudentDashboardRoute() {
-  return <RoleRoute allowedRole="student">student</RoleRoute>
+function DashboardPage() {
+  return 'dashboard'
 }
 
 export const appRouter = createBrowserRouter([
@@ -43,15 +32,47 @@ export const appRouter = createBrowserRouter([
   },
   {
     path: '/dashboard/admin',
-    element: <AdminDashboardRoute />,
+    element: (
+      <ProtectedRoute allowedRoles={['admin']}>
+        <AdminPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/dashboard/teacher',
-    element: <TeacherDashboardRoute />,
+    element: (
+      <ProtectedRoute allowedRoles={['teacher']}>
+        <TeacherPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/dashboard/student',
-    element: <StudentDashboardRoute />,
+    element: (
+      <ProtectedRoute allowedRoles={['student']}>
+        <StudentPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/dashboard',
+    element: (
+      <ProtectedRoute allowedRoles={['admin', 'teacher', 'student']}>
+        <DashboardPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/booking',
+    element: (
+      <ProtectedRoute allowedRoles={['admin', 'teacher', 'student']}>
+        <Booking />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/unauthorized',
+    element: <Unauthorized />,
   },
   {
     path: '*',

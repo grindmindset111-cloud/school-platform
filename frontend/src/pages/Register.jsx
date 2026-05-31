@@ -4,6 +4,8 @@ import api from '@/api'
 
 function Register() {
   const navigate = useNavigate()
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -19,6 +21,8 @@ function Register() {
 
   const handleSubmit = async (event) => {
     event.preventDefault()
+    setLoading(true)
+    setError('')
 
     const payload = {
       name: formData.name,
@@ -31,17 +35,40 @@ function Register() {
       payload.classLevel = formData.classLevel
     }
 
-    await api.post('/auth/register', payload)
-    navigate('/login', { replace: true })
+    try {
+      await api.post('/api/auth/register', payload)
+      navigate('/login', { replace: true })
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Registration failed')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
     <form onSubmit={handleSubmit}>
-      <input type="text" name="name" value={formData.name} onChange={handleChange} required />
-      <input type="email" name="email" value={formData.email} onChange={handleChange} required />
+      <h1>Register</h1>
+      {error && <p role="alert">{error}</p>}
+      <input
+        type="text"
+        name="name"
+        placeholder="Name"
+        value={formData.name}
+        onChange={handleChange}
+        required
+      />
+      <input
+        type="email"
+        name="email"
+        placeholder="Email"
+        value={formData.email}
+        onChange={handleChange}
+        required
+      />
       <input
         type="password"
         name="password"
+        placeholder="Password"
         value={formData.password}
         onChange={handleChange}
         required
@@ -69,7 +96,9 @@ function Register() {
         </select>
       )}
 
-      <button type="submit">Register</button>
+      <button type="submit" disabled={loading}>
+        {loading ? 'Registering...' : 'Register'}
+      </button>
     </form>
   )
 }

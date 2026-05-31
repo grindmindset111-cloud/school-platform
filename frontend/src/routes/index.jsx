@@ -2,24 +2,10 @@ import { createBrowserRouter, Navigate } from 'react-router-dom'
 import Login from '../pages/Login'
 import Register from '../pages/Register'
 import Unauthorized from '../pages/Unauthorized'
-import Booking from '../pages/Booking'
+import Dashboard from '../pages/Dashboard'
+import Layout from '../pages/Layout'
+import ResourcePage from '../pages/ResourcePage'
 import ProtectedRoute from '@/routes/ProtectedRoute'
-
-function AdminPage() {
-  return 'admin'
-}
-
-function TeacherPage() {
-  return 'teacher'
-}
-
-function StudentPage() {
-  return 'student'
-}
-
-function DashboardPage() {
-  return 'dashboard'
-}
 
 export const appRouter = createBrowserRouter([
   {
@@ -31,44 +17,23 @@ export const appRouter = createBrowserRouter([
     element: <Register />,
   },
   {
-    path: '/dashboard/admin',
-    element: (
-      <ProtectedRoute allowedRoles={['admin']}>
-        <AdminPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/dashboard/teacher',
-    element: (
-      <ProtectedRoute allowedRoles={['teacher']}>
-        <TeacherPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/dashboard/student',
-    element: (
-      <ProtectedRoute allowedRoles={['student']}>
-        <StudentPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/dashboard',
+    path: '/',
     element: (
       <ProtectedRoute allowedRoles={['admin', 'teacher', 'student']}>
-        <DashboardPage />
+        <Layout />
       </ProtectedRoute>
     ),
-  },
-  {
-    path: '/booking',
-    element: (
-      <ProtectedRoute allowedRoles={['admin', 'teacher', 'student']}>
-        <Booking />
-      </ProtectedRoute>
-    ),
+    children: [
+      { index: true, element: <Navigate to="/dashboard" replace /> },
+      { path: 'dashboard', element: <Dashboard /> },
+      { path: 'students', element: <ResourcePage resource="students" /> },
+      { path: 'staff', element: <ResourcePage resource="staff" /> },
+      { path: 'courses', element: <ResourcePage resource="courses" /> },
+      { path: 'attendance', element: <ResourcePage resource="attendance" /> },
+      { path: 'results', element: <ResourcePage resource="results" /> },
+      { path: 'notifications', element: <ResourcePage resource="notifications" /> },
+      { path: 'settings', element: <ResourcePage resource="settings" /> },
+    ],
   },
   {
     path: '/unauthorized',

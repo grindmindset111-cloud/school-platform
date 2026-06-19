@@ -3,6 +3,11 @@ const { Audit } = require('../models');
 
 /**
  * Logs an action in the audit table.
+ *
+ * NEVER throws. If the audit insert fails (DB lock, schema mismatch,
+ * etc.) the failure is logged and swallowed — the calling request
+ * path must never be affected.
+ *
  * @param {Object} params
  * @param {string} params.action - Action performed (e.g., 'CREATE_BOOKING')
  * @param {string} params.entity - Entity type (e.g., 'Booking', 'Result')
@@ -25,7 +30,7 @@ const audit = async ({ action, entity, entityId = null, userId, metadata = null 
             metadata: metadata ? JSON.stringify(metadata) : null
         });
     } catch (err) {
-        console.error('Audit logging failed:', err.message);
+        console.error('Audit failed (non-fatal):', err.message);
     }
 };
 

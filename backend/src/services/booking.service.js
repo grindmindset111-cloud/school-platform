@@ -186,23 +186,26 @@ const createBooking = async (data) => {
             });
 
             // ✅ Push to Redis queue
-            await bookingQueue.add(
-                'process-booking',
-                {
-                    bookingId: booking.id
-                },
-                {
-                    attempts: 3,
-
-                    backoff: {
-                        type: 'exponential',
-                        delay: 2000
-                    },
-
-                    removeOnComplete: true,
-                    removeOnFail: false
-                }
-            );
+            // The queue is a post-create async pipeline, not part of the
+            // critical booking path. If Redis is unreachable we log a
+            // warning and continue — the booking still gets persisted.
+            try {
+                await bookingQueue.add(
+                    'process-booking',
+                    { bookingId: booking.id },
+                    {
+                        attempts: 3,
+                        backoff: { type: 'exponential', delay: 2000 },
+                        removeOnComplete: true,
+                        removeOnFail: false
+                    }
+                );
+            } catch (queueErr) {
+                console.warn(
+                    `⚠️  Failed to enqueue booking ${booking.id}:`,
+                    queueErr.message
+                );
+            }
 
             return booking;
         });
@@ -270,6 +273,84 @@ const getBookings = async (user, query = {}) => {
             ['startTime', 'ASC']
         ]
     });
+};
+
+
+/**
+ * ============================
+ * GET BOOKING BY ID
+ * ============================
+ * Returns a single booking with the same relations used by
+ * getBookings, plus the subject's teachers so the controller
+ * (and any downstream authorization check) can verify staff
+ * scope. Throws {message, status} on not-found / forbidden.
+ */
+const getBookingById = async (id, user) => {
+
+    if (!id || Number.isNaN(Number(id))) {
+        throw {
+            message: 'Invalid booking id',
+            status: 400
+        };
+    }
+
+    const booking = await Booking.findByPk(id, {
+        include: [
+            {
+                model: User,
+                as: 'student',
+                attributes: ['id', 'name', 'email']
+            },
+            {
+                model: Resource,
+                as: 'resource',
+                attributes: ['id', 'name']
+            },
+            {
+                model: Subject,
+                as: 'subject',
+                attributes: ['id', 'name', 'code'],
+                include: [
+                    {
+                        model: User,
+                        as: 'teachers',
+                        attributes: ['id']
+                    }
+                ]
+            }
+        ]
+    });
+
+    if (!booking) {
+        throw {
+            message: 'Booking not found',
+            status: 404
+        };
+    }
+
+    // 🔐 Authorization
+    if (user.role === 'STUDENT') {
+        if (booking.studentId !== user.id) {
+            throw {
+                message: 'You are not allowed to view this booking',
+                status: 403
+            };
+        }
+    } else if (user.role === 'STAFF') {
+        const teacherIds = (booking.subject?.teachers || []).map(
+            (t) => t.id
+        );
+
+        if (!teacherIds.includes(user.id)) {
+            throw {
+                message: 'You are not assigned to this booking\'s subject',
+                status: 403
+            };
+        }
+    }
+    // ADMIN: full access (no extra check)
+
+    return booking;
 };
 
 
@@ -462,12 +543,32 @@ const bulkUpdateBookings = async (
 
 /**
  * ============================
+ * GET AVAILABILITY
+ * ============================
+ * Returns basic availability metadata for a given date / subject /
+ * class level. The frontend does not currently consume this, but the
+ * route is wired, so we return an empty result set rather than crashing.
+ */
+const getAvailability = async (query = {}) => {
+    return {
+        date: query.date || null,
+        subjectId: query.subjectId || null,
+        classLevelId: query.classLevelId || null,
+        slots: []
+    };
+};
+
+
+/**
+ * ============================
  * EXPORTS
  * ============================
  */
 module.exports = {
     createBooking,
     getBookings,
+    getBookingById,
     updateBooking,
-    bulkUpdateBookings
+    bulkUpdateBookings,
+    getAvailability
 };

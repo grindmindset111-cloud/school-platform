@@ -1,0 +1,11 @@
+# Backend-specific ignores
+node_modules/
+*.log
+logs/
+*.sqlite
+*.sqlite3
+*.db
+.env
+.env.local
+backend.log
+uploads/

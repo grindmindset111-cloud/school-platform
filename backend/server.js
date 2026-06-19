@@ -12,7 +12,8 @@ const HOST = '0.0.0.0';
 
 let server;
 let bookingJob;
-let queueJob;
+let queueTimer = null;
+let isProcessingQueue = false;
 
 /**
  * ============================
@@ -32,16 +33,37 @@ async function startServer() {
         console.log('✅ Database connected');
 
         // ============================
-        // SAFE DATABASE SYNC
+        // SQLITE PRAGMAS
         // ============================
-        const isDev = process.env.NODE_ENV === 'development';
+        // Applied here (not via hooks.afterConnect) because Sequelize
+        // 6.32.1 + sqlite3 5.1.6 do not surface afterConnect hooks to
+        // the underlying driver. Executing the PRAGMAs on the same
+        // connection that authenticated ensures they persist for the
+        // pool's lifetime and apply to every subsequent query.
+        await sequelize.query('PRAGMA journal_mode=WAL;');
+        await sequelize.query('PRAGMA synchronous=NORMAL;');
+        await sequelize.query('PRAGMA foreign_keys=ON;');
+        console.log('📝 SQLite PRAGMAs applied: WAL, synchronous=NORMAL, foreign_keys=ON');
+
+        // ============================
+        // SAFE DATABASE SYNC
+        //
+        // ALTER MODE only when explicitly enabled via DB_SYNC_ALTER=1.
+        // SQLite + sequelize alter is unreliable (drop+recreate FK
+        // tables fails when other tables reference them). Most schema
+        // changes should be done via migrations instead.
+        const allowAlter =
+            process.env.NODE_ENV === 'development' &&
+            process.env.DB_SYNC_ALTER === '1';
 
         await sequelize.sync({
             force: false,
-            alter: isDev
+            alter: allowAlter
         });
 
-        console.log(`📦 Database synced (${isDev ? 'DEV ALTER MODE' : 'PRODUCTION SAFE MODE'})`);
+        console.log(
+            `📦 Database synced (${allowAlter ? 'DEV ALTER MODE' : 'SAFE MODE'})`
+        );
 
         // ============================
         // START EXPRESS SERVER
@@ -83,28 +105,35 @@ async function startServer() {
         // ============================
         // SMART QUEUE PROCESSOR
         // ============================
-        queueJob = setInterval(async () => {
+        // Self-scheduling loop with a re-entry guard. Prevents overlapping
+        // transactions when a booking flow is holding the SQLite write lock.
+        // Minimum interval between runs is QUEUE_INTERVAL_MS.
+        const QUEUE_INTERVAL_MS = 5000;
 
+        const runQueueTick = async () => {
+            if (isProcessingQueue) {
+                // Previous tick still running — skip this one.
+                queueTimer = setTimeout(runQueueTick, QUEUE_INTERVAL_MS);
+                return;
+            }
+            isProcessingQueue = true;
             try {
-
                 const hasQueue = await Booking.findOne({
-                    where: {
-                        queueStatus: 'queued'
-                    }
+                    where: { queueStatus: 'queued' }
                 });
-
                 if (hasQueue) {
                     await processQueue();
                 }
-
             } catch (err) {
-
                 console.error('❌ Queue processor error:', err.message);
+            } finally {
+                isProcessingQueue = false;
+                queueTimer = setTimeout(runQueueTick, QUEUE_INTERVAL_MS);
             }
+        };
 
-        }, 2000);
-
-        console.log('🔥 Queue processor started');
+        queueTimer = setTimeout(runQueueTick, QUEUE_INTERVAL_MS);
+        console.log('🔥 Queue processor started (5s interval, single-flight)');
 
         // ============================
         // GLOBAL ERROR SAFETY
@@ -133,8 +162,8 @@ async function startServer() {
                     clearInterval(bookingJob);
                 }
 
-                if (queueJob) {
-                    clearInterval(queueJob);
+                if (queueTimer) {
+                    clearTimeout(queueTimer);
                 }
 
                 if (server) {

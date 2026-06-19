@@ -1,28 +1,28 @@
-const authRoutes = require('./routes/auth.routes');
-const studentRoutes = require('./routes/student.routes');
-const userRoutes = require('./routes/user.routes');
-const reportRoutes = require('./routes/report.routes');
-const bookingRoutes = require('./routes/booking.routes');
-const resourceRoutes = require('./routes/resource.routes');
-const resultRoutes = require('./routes/result.routes');
-const courseRoutes = require('./routes/course.routes');
-const departmentRoutes = require('./routes/department.routes');
-const semesterRoutes = require('./routes/semester.routes');
-const settingsRoutes = require('./routes/settings.routes');
-const auditRoutes = require('./routes/audit.routes');
-const classLevelRoutes = require('./routes/classLevel.routes');
-const timetableRoutes = require('./routes/timetable.routes');
-const subjectRoutes = require('./routes/subject.routes');
-const notificationRoutes = require('./routes/notification.routes');
-const dashboardRoutes = require('./routes/dashboard.routes');
-const healthRoutes = require('./routes/health.routes');
-const adminRoutes = require('./routes/adminRoutes');
+const authRoutes = require('./auth.routes');
+// const studentRoutes = require('./student.routes'); // ⚠️ Requires non-existent student.controller - students managed via user routes
+const userRoutes = require('./user.routes');
+const reportRoutes = require('./report.routes');
+const bookingRoutes = require('./booking.routes');
+const resourceRoutes = require('./resource.routes');
+const resultRoutes = require('./result.routes');
+const courseRoutes = require('./course.routes');
+const departmentRoutes = require('./department.routes');
+const semesterRoutes = require('./semester.routes');
+const settingsRoutes = require('./settings.routes');
+const auditRoutes = require('./audit.routes');
+const classLevelRoutes = require('./classLevel.routes');
+const timetableRoutes = require('./timetable.routes');
+const subjectRoutes = require('./subject.routes');
+const notificationRoutes = require('./notification.routes');
+const dashboardRoutes = require('./dashboard.routes');
+const healthRoutes = require('./health.routes');
+const adminRoutes = require('./adminRoutes');
 
 
 module.exports = (app) => {
 
     app.use('/api/auth', authRoutes);
-    app.use('/api/students', studentRoutes);
+    // app.use('/api/students', studentRoutes); // ⚠️ Requires non-existent student.controller
     app.use('/api/users', userRoutes);
     app.use('/api/reports', reportRoutes);
 

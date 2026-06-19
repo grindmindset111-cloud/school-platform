@@ -4,6 +4,12 @@ const { sendEmail } = require('./email.utils');
 
 /**
  * Send notifications and optional emails to users.
+ *
+ * Failure isolation:
+ *  - DB bulkCreate is awaited once. If it throws, the whole call throws.
+ *  - Email sends run in parallel but each one has its own try/catch,
+ *    so a single EAUTH or network failure does not reject the others.
+ *
  * @param {Object} params
  * @param {Array} params.users - Array of user objects {id, name, email}
  * @param {string} params.title - Notification title
@@ -36,18 +42,26 @@ async function notify({ users, title, message, type = 'alert', emailSubject, ema
 
         await Notification.bulkCreate(notifications);
 
-        // 2️⃣ Send emails if email info exists
+        // 2️⃣ Send emails if email info exists. Each send is wrapped
+        //    in its own try/catch so one failure doesn't sink the batch.
         if (emailSubject && emailTextBuilder) {
             await Promise.all(
                 validUsers
                     .filter(u => u.email)
-                    .map(user =>
-                        sendEmail({
-                            to: user.email,
-                            subject: emailSubject,
-                            text: emailTextBuilder(user)
-                        })
-                    )
+                    .map(async (user) => {
+                        try {
+                            await sendEmail({
+                                to: user.email,
+                                subject: emailSubject,
+                                text: emailTextBuilder(user)
+                            });
+                        } catch (err) {
+                            console.error(
+                                `Email failed for user ${user.id}:`,
+                                err.message
+                            );
+                        }
+                    })
             );
         }
     } catch (err) {

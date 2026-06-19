@@ -54,12 +54,13 @@ exports.register = async (req, res) => {
             classLevelId: assignedClassLevelId
         });
 
-        await audit({
+        // Fire-and-forget: audit failures must never break registration.
+        audit({
             action: 'REGISTER',
             entity: 'User',
             entityId: user.id,
             userId: user.id
-        });
+        }).catch(err => console.error('Audit failed (non-fatal):', err.message));
 
         // Fetch user with classLevel for response
         const userWithClass = await User.findByPk(user.id, {
@@ -109,12 +110,13 @@ exports.login = async (req, res) => {
             { expiresIn: jwtConfig.expiresIn }
         );
 
-        await audit({
+        // Fire-and-forget: audit failures must never break login.
+        audit({
             action: 'LOGIN',
             entity: 'User',
             entityId: user.id,
             userId: user.id
-        });
+        }).catch(err => console.error('Audit failed (non-fatal):', err.message));
 
         // Fetch user with classLevel for response
         const userWithClass = await User.findByPk(user.id, {
@@ -145,12 +147,13 @@ exports.requestPasswordReset = async (req, res) => {
         user.resetTokenExpiry = Date.now() + 3600000; // 1 hour
         await user.save();
 
-        await audit({
+        // Fire-and-forget: audit failures must never break password reset.
+        audit({
             action: 'PASSWORD_RESET_REQUEST',
             entity: 'User',
             entityId: user.id,
             userId: user.id
-        });
+        }).catch(err => console.error('Audit failed (non-fatal):', err.message));
 
         try {
             await sendEmail({
@@ -187,12 +190,13 @@ exports.resetPassword = async (req, res) => {
         user.resetTokenExpiry = null;
         await user.save();
 
-        await audit({
+        // Fire-and-forget: audit failures must never break password reset.
+        audit({
             action: 'PASSWORD_RESET',
             entity: 'User',
             entityId: user.id,
             userId: user.id
-        });
+        }).catch(err => console.error('Audit failed (non-fatal):', err.message));
 
         return success(res, null, 'Password reset successfully');
 

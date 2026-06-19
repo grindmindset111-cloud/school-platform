@@ -1,2 +1,47 @@
-.qodo/
+# Dependencies
 node_modules/
+
+# Logs
+logs/
+*.log
+backend.log
+
+# Environment files (any depth)
+.env
+.env.local
+.env.*.local
+backend/.env
+frontend/.env
+
+# Database (SQLite dev database)
+*.sqlite
+*.sqlite3
+*.db
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Build output
+dist/
+build/
+coverage/
+
+# Cache directories
+.qodo/
+.cache/
+
+# Unrelated / external projects (must never enter this repo)
+odysseus/
+
+# Misc
+*.pid
+*.seed
+*.pid.lock
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*

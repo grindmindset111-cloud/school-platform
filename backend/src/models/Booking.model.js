@@ -48,7 +48,7 @@ module.exports = (sequelize, DataTypes) => {
             },
 
             status: {
-                type: DataTypes.ENUM('pending', 'approved', 'rejected', 'cancelled'),
+                type: DataTypes.ENUM('pending', 'approved', 'rejected', 'cancelled', 'expired'),
                 defaultValue: 'pending'
             },
 
@@ -75,7 +75,6 @@ module.exports = (sequelize, DataTypes) => {
                 defaultValue: 0
             }
         },
-
         {
             tableName: 'bookings',
             timestamps: true,

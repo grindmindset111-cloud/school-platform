@@ -1,6 +1,7 @@
 const {
     createBooking,
     getBookings,
+    getBookingById,
     updateBooking: updateBookingService,
     bulkUpdateBookings,
     getAvailability
@@ -127,6 +128,43 @@ exports.getBookings = async (req, res) => {
         return error(
             res,
             err.message || 'Failed to fetch bookings',
+            err.status || 500
+        );
+    }
+};
+
+
+// ====================================
+// GET BOOKING BY ID
+// ====================================
+// Students can only view their own bookings.
+// Staff can view any booking tied to one of their subjects.
+// Admins can view any booking.
+exports.getBookingById = async (req, res) => {
+    try {
+
+        const user = req.user;
+
+        const booking = await getBookingById(
+            req.params.id,
+            user
+        );
+
+        audit({
+            action: 'VIEW_BOOKING',
+            entity: 'Booking',
+            entityId: booking.id,
+            userId: user.id
+        }).catch(console.error);
+
+        return success(res, booking, 'Booking fetched successfully');
+
+    } catch (err) {
+        console.error('Get booking by id error:', err);
+
+        return error(
+            res,
+            err.message || 'Failed to fetch booking',
             err.status || 500
         );
     }

@@ -49,6 +49,22 @@ router.get(
 
 /**
  * ==========================================================
+ * GET BOOKING BY ID
+ * ==========================================================
+ * NOTE: This MUST be declared BEFORE the `/:id` PATCH route
+ * to avoid the PATCH handler swallowing single-segment paths
+ * (Express matches routes in order).
+ */
+router.get(
+    '/:id',
+    auth,
+    permit('BOOKING_VIEW'),
+    bookingController.getBookingById
+);
+
+
+/**
+ * ==========================================================
  * CHECK AVAILABILITY
  * ==========================================================
  */

@@ -5,6 +5,10 @@ import Unauthorized from '../pages/Unauthorized'
 import Dashboard from '../pages/Dashboard'
 import Layout from '../pages/Layout'
 import ResourcePage from '../pages/ResourcePage'
+import BookingCreatePage from '../pages/BookingCreatePage'
+import BookingDetailPage from '../pages/BookingDetailPage'
+import BookingEditPage from '../pages/BookingEditPage'
+import BookingListPage from '../pages/BookingListPage'
 import ProtectedRoute from '@/routes/ProtectedRoute'
 
 export const appRouter = createBrowserRouter([
@@ -19,13 +23,17 @@ export const appRouter = createBrowserRouter([
   {
     path: '/',
     element: (
-      <ProtectedRoute allowedRoles={['admin', 'teacher', 'student']}>
+      <ProtectedRoute allowedRoles={['admin', 'staff', 'student']}>
         <Layout />
       </ProtectedRoute>
     ),
     children: [
       { index: true, element: <Navigate to="/dashboard" replace /> },
       { path: 'dashboard', element: <Dashboard /> },
+      { path: 'bookings', element: <BookingListPage /> },
+      { path: 'bookings/new', element: <BookingCreatePage /> },
+      { path: 'bookings/:id', element: <BookingDetailPage /> },
+      { path: 'bookings/:id/edit', element: <BookingEditPage /> },
       { path: 'students', element: <ResourcePage resource="students" /> },
       { path: 'staff', element: <ResourcePage resource="staff" /> },
       { path: 'courses', element: <ResourcePage resource="courses" /> },

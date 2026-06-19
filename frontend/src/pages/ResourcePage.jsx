@@ -5,6 +5,7 @@ import {
   listResource,
   updateResource,
 } from '@/api/resources'
+import { getApiErrorMessage } from '@/api/errors'
 
 const configs = {
   students: {
@@ -25,7 +26,9 @@ const configs = {
   },
   results: {
     title: 'Results',
-    fields: ['studentId', 'courseId', 'score', 'term'],
+    fields: ['studentId', 'subjectId', 'score'],
+    // Note: Delete not supported by backend. Grade, released, locked are read-only server-side.
+    canDelete: false,
   },
   notifications: {
     title: 'Notifications',
@@ -77,7 +80,7 @@ export default function ResourcePage({ resource }) {
       setItems(data)
       setError('')
     } catch (err) {
-      setError(err.response?.data?.message || err.message || `Unable to load ${config.title}`)
+      setError(getApiErrorMessage(err, `Unable to load ${config.title}`))
     } finally {
       setLoading(false)
     }
@@ -95,7 +98,7 @@ export default function ResourcePage({ resource }) {
       })
       .catch((err) => {
         if (alive) {
-          setError(err.response?.data?.message || err.message || `Unable to load ${config.title}`)
+          setError(getApiErrorMessage(err, `Unable to load ${config.title}`))
         }
       })
       .finally(() => {
@@ -143,7 +146,7 @@ export default function ResourcePage({ resource }) {
       resetForm()
       await loadItems(false)
     } catch (err) {
-      setError(err.response?.data?.message || err.message || `Unable to save ${config.title}`)
+      setError(getApiErrorMessage(err, `Unable to save ${config.title}`))
     } finally {
       setSaving(false)
     }
@@ -160,7 +163,7 @@ export default function ResourcePage({ resource }) {
       await deleteResource(resource, id)
       await loadItems(false)
     } catch (err) {
-      setError(err.response?.data?.message || err.message || `Unable to delete ${config.title}`)
+      setError(getApiErrorMessage(err, `Unable to delete ${config.title}`))
     }
   }
 
@@ -210,9 +213,11 @@ export default function ResourcePage({ resource }) {
                     <button type="button" onClick={() => startEdit(item)}>
                       Edit
                     </button>
-                    <button type="button" onClick={() => handleDelete(item)}>
-                      Delete
-                    </button>
+                    {config.canDelete === true && (
+                      <button type="button" onClick={() => handleDelete(item)}>
+                        Delete
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

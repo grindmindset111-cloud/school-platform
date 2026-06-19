@@ -221,9 +221,13 @@ const getDashboard = async (user) => {
     if (role === 'STAFF') {
 
         const mySubjects = await Subject.findAll({
-            where: {
-                teacherId: userId
-            },
+            include: [{
+                model: User,
+                as: 'teachers',
+                where: { id: userId },
+                attributes: [],
+                through: { attributes: [] }
+            }],
             attributes: ['id']
         });
 

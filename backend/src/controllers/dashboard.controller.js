@@ -7,13 +7,13 @@ exports.dashboard = async (req, res) => {
     try {
         const data = await dashboardService.getDashboard(req.user);
 
-        // Audit logging
-        await audit({
+        // Fire-and-forget: audit failures must never break dashboard load.
+        audit({
             action: 'VIEW_DASHBOARD',
             entity: 'Dashboard',
             entityId: null,
             userId: req.user.id
-        });
+        }).catch(err => console.error('Audit failed (non-fatal):', err.message));
 
         return success(res, data);
     } catch (err) {

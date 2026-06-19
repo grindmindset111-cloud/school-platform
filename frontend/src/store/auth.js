@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import api, { TOKEN_KEY } from '@/api'
+import { getApiErrorMessage } from '@/api/errors'
 
 function normalizeUser(payload) {
   return payload?.user || payload?.data?.user || payload?.data || payload
@@ -36,7 +37,7 @@ const useAuthStore = create((set) => ({
       set({
         user: null,
         loading: false,
-        error: err.response?.data?.message || err.message || 'Login failed',
+        error: getApiErrorMessage(err, 'Login failed'),
       })
       throw err
     }
@@ -73,7 +74,7 @@ const useAuthStore = create((set) => ({
       set({
         user: null,
         loading: false,
-        error: err.response?.data?.message || err.message || 'Session expired',
+        error: getApiErrorMessage(err, 'Session expired'),
       })
       return null
     }

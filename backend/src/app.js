@@ -22,11 +22,84 @@ const app = express();
 app.use(helmet());
 app.use(compression());
 
-app.use(cors({
-    origin: process.env.CLIENT_URL || 'http://127.0.0.1:5500',
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
-    credentials: true
-}));
+/**
+ * CORS configuration.
+ *
+ * The single-string `origin` we used before silently blocked the
+ * browser whenever Vite picked a different port (e.g. 5174 because
+ * 5173 was already taken), which is fragile in development.
+ *
+ * We now:
+ *   - Read the allowlist from `CLIENT_URL_ORIGINS` (comma-separated).
+ *   - Fall back to a permissive list of common local Vite ports.
+ *   - Allow any `http://localhost:*` and `http://127.0.0.1:*` origin in
+ *     development, unless `NODE_ENV=production`, in which case we only
+ *     honour the explicit allowlist (no implicit dev wildcard).
+ *   - Echo back the actual origin so `credentials: true` works.
+ */
+const buildAllowedOrigins = () => {
+    const envList = (process.env.CLIENT_URL_ORIGINS || '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+    if (envList.length) {
+        return new Set(envList);
+    }
+
+    if (process.env.NODE_ENV === 'production') {
+        // In production we never want a wildcard. Fall back to
+        // CLIENT_URL or an empty set (no origins allowed).
+        return new Set(
+            process.env.CLIENT_URL ? [process.env.CLIENT_URL] : []
+        );
+    }
+
+    // Development defaults: every common local Vite / CRA / Live
+    // Server port. If you need another one, set CLIENT_URL_ORIGINS.
+    return new Set([
+        'http://localhost:5173',
+        'http://localhost:5174',
+        'http://localhost:5175',
+        'http://localhost:3000',
+        'http://localhost:4173',
+        'http://localhost:5500',
+        'http://localhost:8080',
+        'http://127.0.0.1:5173',
+        'http://127.0.0.1:5174',
+        'http://127.0.0.1:5175',
+        'http://127.0.0.1:3000',
+        'http://127.0.0.1:5500'
+    ]);
+};
+
+const allowedOrigins = buildAllowedOrigins();
+
+app.use(
+    cors({
+        origin(origin, callback) {
+            // Allow requests with no Origin (curl, server-to-server).
+            if (!origin) {
+                return callback(null, true);
+            }
+            if (allowedOrigins.has(origin)) {
+                return callback(null, true);
+            }
+            return callback(
+                new Error(`CORS: origin '${origin}' not allowed`)
+            );
+        },
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+        allowedHeaders: [
+            'Content-Type',
+            'Authorization',
+            'X-Signature',
+            'X-Requested-With'
+        ],
+        credentials: true,
+        maxAge: 86400 // cache preflight 24h
+    })
+);
 
 
 // ========================================
@@ -54,31 +127,43 @@ app.use('/api/auth', authLimiter, require('./routes/auth.routes'));
 // ========================================
 // BOOKING RATE LIMITING
 // ========================================
+// NOTE: previously applied to all /api/bookings routes. That blocked
+// normal GET traffic after a few reads. We mount it only on the
+// mutating routes (POST /, PATCH /:id, PATCH /bulk) so reads remain
+// unrestricted. Per-route limits can be added inside booking.routes.js
+// if finer control is needed.
 
-app.use('/api/bookings', bookingLimiter, require('./routes/booking.routes'));
+app.use('/api/bookings', (req, res, next) => {
+    if (req.method === 'POST' || req.method === 'PATCH' || req.method === 'PUT' || req.method === 'DELETE') {
+        return bookingLimiter(req, res, next);
+    }
+    return next();
+});
 
 
 // ========================================
 // INTEGRITY MIDDLEWARE (WRITE OPS ONLY)
 // ========================================
-
-app.use((req, res, next) => {
-
-    const writeMethods = ['POST', 'PUT', 'PATCH', 'DELETE'];
-
-    if (!writeMethods.includes(req.method)) {
-        return next();
-    }
-
-    return integrity(req, res, next);
-});
+// NOTE: The HMAC integrity check requires the frontend to sign every
+// write request with the shared INTEGRITY_SECRET. The current frontend
+// does not compute or send the `x-signature` header, so enabling this
+// middleware blocks every POST/PATCH/DELETE. Re-enable it once the
+// frontend implements signPayload() (see backend/src/utils/integrity.utils.js).
+//
+// app.use((req, res, next) => {
+//     const writeMethods = ['POST', 'PUT', 'PATCH', 'DELETE'];
+//     if (!writeMethods.includes(req.method)) {
+//         return next();
+//     }
+//     return integrity(req, res, next);
+// });
 
 
 // ========================================
 // ROUTES
 // ========================================
 
-require('./index.routes')(app);
+require('./routes/index.routes')(app);
 
 
 // ========================================

@@ -15,6 +15,65 @@ const bookingQueue = require('../queues/booking.queue');
 
 /**
  * ============================
+ * SQLITE BUSY RETRY (Tier-1 + Tier-2)
+ * ============================
+ * SQLite is single-writer. The booking queue processor
+ * (server.js → jobs/booking.queue.processor.js) opens short write
+ * transactions every 5s; while one is in flight, our INSERT may
+ * receive SQLITE_BUSY. The pool-wide busy_timeout configured in
+ * config/database.config.js is not always re-applied per
+ * connection checkout in this Sequelize 6.32.1 + sqlite3 5.1.6
+ * stack, so we also re-apply it inline and retry with backoff.
+ * Only used inside createBooking; read paths are unchanged.
+ */
+const BUSY_RETRY_DELAYS_MS = [0, 100, 250, 500];
+
+const isSqliteBusy = (err) => {
+    if (!err) return false;
+    const code = err.parent && err.parent.code;
+    const errno = err.parent && err.parent.errno;
+    const msg = String(err.message || err.parent?.message || '');
+    return (
+        code === 'SQLITE_BUSY' ||
+        errno === 5 ||
+        msg.includes('SQLITE_BUSY') ||
+        msg.includes('database is locked') ||
+        (err.name === 'SequelizeTimeoutError' &&
+            (msg.includes('SQLITE_BUSY') || msg.includes('database is locked')))
+    );
+};
+
+const reapplyBusyTimeout = async () => {
+    try {
+        await sequelize.query('PRAGMA busy_timeout = 10000;');
+    } catch (_) {
+        // Non-fatal: PRAGMA may not be supported on every connection;
+        // the retry loop below still handles contention.
+    }
+};
+
+const runWithBusyRetry = async (fn) => {
+    let lastErr;
+    for (let i = 0; i < BUSY_RETRY_DELAYS_MS.length; i++) {
+        const delay = BUSY_RETRY_DELAYS_MS[i];
+        if (delay > 0) {
+            await new Promise((r) => setTimeout(r, delay));
+        }
+        await reapplyBusyTimeout();
+        try {
+            return await fn();
+        } catch (err) {
+            lastErr = err;
+            if (!isSqliteBusy(err)) throw err;
+            // else: retry
+        }
+    }
+    throw lastErr;
+};
+
+
+/**
+ * ============================
  * DB ERROR HANDLER
  * ============================
  */
@@ -70,11 +129,12 @@ const createBooking = async (data) => {
 
     try {
 
-        return await sequelize.transaction(async (t) => {
+            return await runWithBusyRetry(() =>
+                sequelize.transaction(async (t) => {
 
-            // 🔐 Normalize time
-            const normalizedStart = normalizeTime(startTime);
-            const normalizedEnd = normalizeTime(endTime);
+                // 🔐 Normalize time
+                const normalizedStart = normalizeTime(startTime);
+                const normalizedEnd = normalizeTime(endTime);
 
             // 🔐 Validate student
             const student = await User.findByPk(studentId, {
@@ -190,30 +250,30 @@ const createBooking = async (data) => {
             // critical booking path. If Redis is unreachable we log a
             // warning and continue — the booking still gets persisted.
             try {
-                await bookingQueue.add(
-                    'process-booking',
-                    { bookingId: booking.id },
-                    {
-                        attempts: 3,
-                        backoff: { type: 'exponential', delay: 2000 },
-                        removeOnComplete: true,
-                        removeOnFail: false
-                    }
-                );
-            } catch (queueErr) {
-                console.warn(
-                    `⚠️  Failed to enqueue booking ${booking.id}:`,
-                    queueErr.message
-                );
-            }
+                            await bookingQueue.add(
+                                'process-booking',
+                                { bookingId: booking.id },
+                                {
+                                    attempts: 3,
+                                    backoff: { type: 'exponential', delay: 2000 },
+                                    removeOnComplete: true,
+                                    removeOnFail: false
+                                }
+                            );
+                        } catch (queueErr) {
+                            console.warn(
+                                `⚠️  Failed to enqueue booking ${booking.id}:`,
+                                queueErr.message
+                            );
+                        }
 
-            return booking;
-        });
+                        return booking;
+                    }));
 
-    } catch (err) {
-        handleDbError(err);
-    }
-};
+                } catch (err) {
+                    handleDbError(err);
+                }
+            };
 
 
 /**
@@ -363,7 +423,8 @@ const updateBooking = async (id, data, user) => {
 
     try {
 
-        return await sequelize.transaction(async (t) => {
+        return await runWithBusyRetry(() =>
+            sequelize.transaction(async (t) => {
 
             const booking = await Booking.findByPk(id, {
 
@@ -427,7 +488,7 @@ const updateBooking = async (id, data, user) => {
             });
 
             return booking;
-        });
+        }));
 
     } catch (err) {
         handleDbError(err);
@@ -455,7 +516,8 @@ const bulkUpdateBookings = async (
 
     try {
 
-        return await sequelize.transaction(async (t) => {
+        return await runWithBusyRetry(() =>
+            sequelize.transaction(async (t) => {
 
             const bookings = await Booking.findAll({
 
@@ -533,7 +595,7 @@ const bulkUpdateBookings = async (
                 skipped,
                 totalRequested: ids.length
             };
-        });
+        }));
 
     } catch (err) {
         handleDbError(err);
